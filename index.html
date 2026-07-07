@@ -107,6 +107,69 @@
       margin-left: 8px;
     }
 
+    .groups {
+      margin-top: 20px;
+    }
+
+    .groups-title {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #86868b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .group-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .group-btn {
+      padding: 14px 8px;
+      font-size: 0.875rem;
+      font-family: inherit;
+      font-weight: 600;
+      color: #1d1d1f;
+      background: #f9f9fb;
+      border: 2px solid #e5e5ea;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      text-align: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .group-btn:hover {
+      border-color: #0071e3;
+      background: #eaf2fd;
+    }
+
+    .group-btn:active {
+      background: #d0e4f9;
+    }
+
+    .group-btn.selected {
+      border-color: #0071e3;
+      background: #0071e3;
+      color: #fff;
+    }
+
+    .group-result {
+      margin-top: 16px;
+      padding: 12px;
+      background: #f9f9fb;
+      border-radius: 12px;
+      text-align: center;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9375rem;
+      color: #86868b;
+    }
+
     footer {
       margin-top: 32px;
       font-size: 0.75rem;
@@ -129,9 +192,15 @@
     <div class="result" id="result">
       <span class="placeholder">尚未選擇</span>
     </div>
+
+    <div class="groups" id="groups" style="display:none;">
+      <p class="groups-title">請選擇設備群組</p>
+      <div class="group-grid" id="groupGrid"></div>
+      <div class="group-result" id="groupResult"></div>
+    </div>
   </div>
 
-  <footer>pwa-v2 &mdash; Phase 1</footer>
+  <footer>pwa-v2 &mdash; Phase 2</footer>
 
   <script>
     const RESTAURANTS = [
@@ -155,6 +224,18 @@
       { code: 'S620', name: '中和建一' }
     ];
 
+    var DEVICE_GROUPS = [
+      { name: '油炸區', key: 'fry', icon: '🔥' },
+      { name: '冷藏區', key: 'cold', icon: '❄️' },
+      { name: '冷凍製冰', key: 'freeze', icon: '🧊' },
+      { name: '空調HVAC', key: 'hvac', icon: '🌬️' },
+      { name: '排汙水處理', key: 'drain', icon: '💧' },
+      { name: '清洗設備', key: 'clean', icon: '🧼' },
+      { name: '刀具器具', key: 'tool', icon: '🔪' },
+      { name: '安全偵測', key: 'safety', icon: '⚠️' },
+      { name: '其他', key: 'other', icon: '📋' }
+    ];
+
     function populateSelect() {
       var selectEl = document.getElementById('restaurantSelect');
       if (!selectEl) return;
@@ -168,9 +249,11 @@
 
     function updateResult(code) {
       var resultEl = document.getElementById('result');
+      var groupsEl = document.getElementById('groups');
       if (!resultEl) return;
       if (!code) {
         resultEl.innerHTML = '<span class="placeholder">尚未選擇</span>';
+        if (groupsEl) groupsEl.style.display = 'none';
         return;
       }
       for (var i = 0; i < RESTAURANTS.length; i++) {
@@ -178,13 +261,42 @@
           resultEl.innerHTML =
             '<span class="selected">' + RESTAURANTS[i].name + '</span>' +
             '<span class="code">' + RESTAURANTS[i].code + '</span>';
+          if (groupsEl) groupsEl.style.display = 'block';
           return;
         }
       }
     }
 
+    function populateGroupGrid() {
+      var gridEl = document.getElementById('groupGrid');
+      if (!gridEl) return;
+      gridEl.innerHTML = '';
+      for (var i = 0; i < DEVICE_GROUPS.length; i++) {
+        var btn = document.createElement('button');
+        btn.className = 'group-btn';
+        btn.textContent = DEVICE_GROUPS[i].icon + ' ' + DEVICE_GROUPS[i].name;
+        btn.setAttribute('data-key', DEVICE_GROUPS[i].key);
+        btn.addEventListener('click', function () {
+          selectGroup(this.getAttribute('data-key'), this.textContent);
+        });
+        gridEl.appendChild(btn);
+      }
+    }
+
+    function selectGroup(key, label) {
+      var btns = document.querySelectorAll('.group-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.remove('selected');
+      }
+      var activeBtn = document.querySelector('.group-btn[data-key="' + key + '"]');
+      if (activeBtn) activeBtn.classList.add('selected');
+      var resultEl = document.getElementById('groupResult');
+      if (resultEl) resultEl.textContent = '已選擇：' + label;
+    }
+
     function setup() {
       populateSelect();
+      populateGroupGrid();
       var selectEl = document.getElementById('restaurantSelect');
       if (selectEl) {
         selectEl.addEventListener('change', function () {
