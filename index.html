@@ -817,7 +817,6 @@
     function selectAbnormal(label, deviceName) {
       _currentAbnormal = label;
       _photoCounter = 0;
-      _photos = [];
       var btns = document.querySelectorAll('.abnormal-btn');
       for (var i = 0; i < btns.length; i++) {
         btns[i].classList.remove('selected');
@@ -828,9 +827,7 @@
       var resultEl = document.getElementById('abnormalResult');
       if (resultEl) resultEl.textContent = deviceName + ' — ' + label;
       var cameraEl = document.getElementById('camera');
-      var photoGridEl = document.getElementById('photoGrid');
       if (cameraEl) cameraEl.style.display = 'block';
-      if (photoGridEl) photoGridEl.innerHTML = '';
     }
 
     var _photos = [];
