@@ -314,14 +314,29 @@
       font-weight: 600;
     }
 
-    .camera-section {
-      margin-top: 12px;
+    .camera {
+      margin-top: 16px;
       display: none;
     }
 
+    .camera-title {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #86868b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    .camera-actions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
     .camera-btn {
-      width: 100%;
-      padding: 12px 16px;
+      flex: 1;
+      padding: 12px 8px;
       font-size: 0.9375rem;
       font-family: inherit;
       font-weight: 600;
@@ -330,81 +345,52 @@
       border: none;
       border-radius: 12px;
       cursor: pointer;
-      transition: background 0.15s ease;
+      transition: opacity 0.15s ease;
       -webkit-tap-highlight-color: transparent;
     }
 
-    .camera-btn:hover {
-      background: #0060c7;
-    }
-
-    .camera-btn:active {
-      background: #0050b0;
-    }
-
-    .camera-actions {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    .camera-actions .camera-btn {
-      flex: 1;
-      width: auto;
-    }
-
-    .photo-count {
-      font-size: 0.75rem;
-      color: #86868b;
-      text-align: center;
-      margin-top: 8px;
-      margin-bottom: 6px;
-    }
+    .camera-btn:hover { opacity: 0.85; }
+    .camera-btn:active { opacity: 0.7; }
+    .camera-btn.album { background: #34c759; }
 
     .photo-grid {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin-top: 8px;
     }
 
-    .photo-thumb {
+    .photo-item {
       position: relative;
       width: 80px;
       height: 80px;
-      border-radius: 8px;
+      border-radius: 10px;
       overflow: hidden;
-      flex-shrink: 0;
-      border: 1px solid #e5e5ea;
+      border: 2px solid #e5e5ea;
     }
 
-    .photo-thumb img {
+    .photo-item img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       display: block;
     }
 
-    .photo-delete {
+    .photo-item .photo-del {
       position: absolute;
-      top: 2px;
-      right: 2px;
+      top: 3px;
+      right: 3px;
       width: 22px;
       height: 22px;
       border-radius: 50%;
-      background: rgba(0, 0, 0, 0.55);
+      background: rgba(0,0,0,0.55);
       color: #fff;
       border: none;
-      font-size: 0.7rem;
+      font-size: 12px;
       line-height: 22px;
       text-align: center;
       cursor: pointer;
       padding: 0;
       -webkit-tap-highlight-color: transparent;
-    }
-
-    .photo-delete:hover {
-      background: rgba(220, 53, 69, 0.85);
     }
 
     footer {
@@ -442,18 +428,21 @@
           <p class="abnormals-title">異常狀態</p>
           <div class="abnormal-grid" id="abnormalGrid"></div>
           <div class="abnormal-result" id="abnormalResult"></div>
-          <div class="camera-section" id="cameraSection">
-            <div class="camera-actions">
-              <button class="camera-btn" id="cameraBtn">📷 拍照</button>
-              <button class="camera-btn" id="albumBtn">🖼️ 從相簿選取</button>
-            </div>
-            <p class="photo-count" id="photoCount"></p>
-            <div class="photo-grid" id="photoGrid"></div>
+        </div>
+        <div class="camera" id="camera">
+          <p class="camera-title">📸 拍照紀錄</p>
+          <div class="camera-actions">
+            <button class="camera-btn" id="btnCamera">📷 拍照</button>
+            <button class="camera-btn album" id="btnAlbum">🖼️ 從相簿選取</button>
           </div>
+          <div class="photo-grid" id="photoGrid"></div>
         </div>
       </div>
     </div>
   </div>
+
+  <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
+  <input type="file" id="albumInput" accept="image/*" style="display:none;">
 
   <footer>pwa-v2 &mdash; Phase 5</footer>
 
@@ -675,9 +664,6 @@
       '資料整理': []
     };
 
-    var capturedPhotos = [];
-    var currentContext = { restaurant: '', restaurantName: '', device: '', groupKey: '', abnormal: '' };
-
     function populateSelect() {
       var selectEl = document.getElementById('restaurantSelect');
       if (!selectEl) return;
@@ -696,6 +682,8 @@
       if (!code) {
         resultEl.innerHTML = '<span class="placeholder">尚未選擇</span>';
         if (groupsEl) groupsEl.style.display = 'none';
+        _currentDevice = null;
+        _currentAbnormal = null;
         return;
       }
       for (var i = 0; i < RESTAURANTS.length; i++) {
@@ -704,8 +692,6 @@
             '<span class="selected">' + RESTAURANTS[i].name + '</span>' +
             '<span class="code">' + RESTAURANTS[i].code + '</span>';
           if (groupsEl) groupsEl.style.display = 'block';
-          currentContext.restaurant = RESTAURANTS[i].code;
-          currentContext.restaurantName = RESTAURANTS[i].name;
           return;
         }
       }
@@ -737,7 +723,6 @@
       var resultEl = document.getElementById('groupResult');
       if (resultEl) resultEl.textContent = '已選擇：' + label;
       populateDeviceGrid(key);
-      currentContext.groupKey = key;
     }
 
     function populateDeviceGrid(groupKey) {
@@ -745,6 +730,7 @@
       var gridEl = document.getElementById('deviceGrid');
       var resultEl = document.getElementById('deviceResult');
       var abnormalsEl = document.getElementById('abnormals');
+      var cameraEl = document.getElementById('camera');
       var devices = DEVICES_BY_GROUP[groupKey];
       if (!devicesEl || !gridEl || !devices || devices.length === 0) {
         if (devicesEl) devicesEl.style.display = 'none';
@@ -754,6 +740,10 @@
       gridEl.innerHTML = '';
       if (resultEl) resultEl.textContent = '';
       if (abnormalsEl) abnormalsEl.style.display = 'none';
+      if (cameraEl) cameraEl.style.display = 'none';
+      _currentDevice = null;
+      _currentAbnormal = null;
+      _photos = [];
       for (var i = 0; i < devices.length; i++) {
         (function (deviceName) {
           var btn = document.createElement('button');
@@ -771,7 +761,6 @@
       var abnormalsEl = document.getElementById('abnormals');
       var gridEl = document.getElementById('abnormalGrid');
       var resultEl = document.getElementById('abnormalResult');
-      var cameraSection = document.getElementById('cameraSection');
       var items = ABNORMAL_TYPES[deviceName];
       if (!abnormalsEl || !gridEl) return;
       if (!items || items.length === 0) {
@@ -781,7 +770,6 @@
       abnormalsEl.style.display = 'block';
       gridEl.innerHTML = '';
       if (resultEl) resultEl.textContent = '';
-      if (cameraSection) cameraSection.style.display = 'none';
       for (var i = 0; i < items.length; i++) {
         (function (item) {
           var btn = document.createElement('button');
@@ -796,6 +784,9 @@
     }
 
     function selectAbnormal(label, deviceName) {
+      _currentAbnormal = label;
+      _photoCounter = 0;
+      _photos = [];
       var btns = document.querySelectorAll('.abnormal-btn');
       for (var i = 0; i < btns.length; i++) {
         btns[i].classList.remove('selected');
@@ -805,94 +796,112 @@
       }
       var resultEl = document.getElementById('abnormalResult');
       if (resultEl) resultEl.textContent = deviceName + ' — ' + label;
-      var cameraSection = document.getElementById('cameraSection');
-      if (cameraSection) cameraSection.style.display = 'block';
-      capturedPhotos = [];
-      currentContext.abnormal = label;
-      renderPhotos();
+      var cameraEl = document.getElementById('camera');
+      var photoGridEl = document.getElementById('photoGrid');
+      if (cameraEl) cameraEl.style.display = 'block';
+      if (photoGridEl) photoGridEl.innerHTML = '';
     }
 
-    function generateFileName(photo) {
+    var _photos = [];
+
+    function bindCameraButtons() {
+      var cameraInput = document.getElementById('cameraInput');
+      var albumInput = document.getElementById('albumInput');
+      var btnCamera = document.getElementById('btnCamera');
+      var btnAlbum = document.getElementById('btnAlbum');
+      if (btnCamera && cameraInput) {
+        btnCamera.addEventListener('click', function () { cameraInput.click(); });
+        cameraInput.addEventListener('change', handleCameraCapture);
+      }
+      if (btnAlbum && albumInput) {
+        btnAlbum.addEventListener('click', function () { albumInput.click(); });
+        albumInput.addEventListener('change', handleAlbumSelect);
+      }
+    }
+
+    function getRestaurantName() {
+      var sel = document.getElementById('restaurantSelect');
+      if (!sel || !sel.value) return '未知';
+      for (var i = 0; i < RESTAURANTS.length; i++) {
+        if (RESTAURANTS[i].code === sel.value) return RESTAURANTS[i].name;
+      }
+      return sel.value;
+    }
+
+    function generateFileName(deviceName, abnormalLabel, seq) {
+      var restaurant = getRestaurantName();
       var date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      var seq = String(photo.sequence).padStart(3, '0');
-      var deviceClean = photo.device.replace(/[/&]/g, '-');
-      return photo.restaurant + '_' + deviceClean + '_' + photo.abnormal + '_' + date + '_' + seq + '.jpg';
+      var seqStr = String(seq).padStart(3, '0');
+      var deviceClean = deviceName.replace(/[/&]/g, '-');
+      return restaurant + '_' + deviceClean + '_' + abnormalLabel + '_' + date + '_' + seqStr + '.jpg';
     }
 
     function renderPhotos() {
-      var gridEl = document.getElementById('photoGrid');
-      var countEl = document.getElementById('photoCount');
-      if (!gridEl) return;
-      gridEl.innerHTML = '';
-      if (capturedPhotos.length === 0) {
-        if (countEl) countEl.textContent = '';
-        return;
-      }
-      if (countEl) countEl.textContent = '已拍攝 ' + capturedPhotos.length + ' 張';
-      for (var i = 0; i < capturedPhotos.length; i++) {
+      var grid = document.getElementById('photoGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+      for (var i = 0; i < _photos.length; i++) {
         (function (idx) {
-          var photo = capturedPhotos[idx];
-          var thumb = document.createElement('div');
-          thumb.className = 'photo-thumb';
+          var p = _photos[idx];
+          var item = document.createElement('div');
+          item.className = 'photo-item';
           var img = document.createElement('img');
-          img.src = photo.dataUrl;
-          img.title = photo.fileName;
-          thumb.appendChild(img);
-          var delBtn = document.createElement('button');
-          delBtn.className = 'photo-delete';
-          delBtn.textContent = '✕';
-          delBtn.addEventListener('click', function (e) {
+          img.src = p.dataUrl;
+          img.title = p.fileName;
+          item.appendChild(img);
+          var del = document.createElement('button');
+          del.className = 'photo-del';
+          del.textContent = '✕';
+          del.addEventListener('click', function (e) {
             e.stopPropagation();
-            capturedPhotos.splice(idx, 1);
+            _photos.splice(idx, 1);
             renderPhotos();
           });
-          thumb.appendChild(delBtn);
-          gridEl.appendChild(thumb);
+          item.appendChild(del);
+          grid.appendChild(item);
         })(i);
       }
     }
 
-    function addPhotoFromFile(file) {
+    function addPhoto(file) {
       var reader = new FileReader();
       reader.onload = function (e) {
-        var seq = capturedPhotos.length + 1;
-        var photo = {
-          id: 'photo_' + Date.now() + '_' + seq,
+        _photoCounter++;
+        var deviceName = _currentDevice || '未知';
+        var abnormalLabel = _currentAbnormal || '未知';
+        var fileName = generateFileName(deviceName, abnormalLabel, _photoCounter);
+        _photos.push({
           dataUrl: e.target.result,
-          restaurant: currentContext.restaurant,
-          restaurantName: currentContext.restaurantName,
-          device: currentContext.device,
-          groupKey: currentContext.groupKey,
-          abnormal: currentContext.abnormal,
-          date: new Date().toISOString().slice(0, 10).replace(/-/g, ''),
-          sequence: seq
-        };
-        photo.fileName = generateFileName(photo);
-        capturedPhotos.push(photo);
+          fileName: fileName
+        });
         renderPhotos();
       };
       reader.readAsDataURL(file);
     }
 
     function handleCameraCapture(event) {
-      var files = event.target.files;
-      if (!files || files.length === 0) return;
-      for (var i = 0; i < files.length; i++) {
-        addPhotoFromFile(files[i]);
-      }
-      event.target.value = '';
+      var file = event.target.files[0];
+      if (!file) return;
+      addPhoto(file);
     }
 
     function handleAlbumSelect(event) {
-      var files = event.target.files;
-      if (!files || files.length === 0) return;
-      for (var i = 0; i < files.length; i++) {
-        addPhotoFromFile(files[i]);
-      }
-      event.target.value = '';
+      var file = event.target.files[0];
+      if (!file) return;
+      addPhoto(file);
     }
 
+    var _currentDevice = null;
+    var _currentAbnormal = null;
+    var _photoCounter = 0;
+
     function selectDevice(name) {
+      _currentDevice = name;
+      _currentAbnormal = null;
+      _photoCounter = 0;
+      _photos = [];
+      var cameraEl = document.getElementById('camera');
+      if (cameraEl) cameraEl.style.display = 'none';
       var btns = document.querySelectorAll('.device-btn');
       for (var i = 0; i < btns.length; i++) {
         btns[i].classList.remove('selected');
@@ -902,43 +911,28 @@
       }
       var resultEl = document.getElementById('deviceResult');
       if (resultEl) resultEl.textContent = '已選擇：' + name;
-      currentContext.device = name;
       showAbnormalOptions(name);
     }
 
+    var _setupDone = false;
+
     function setup() {
+      if (_setupDone) return;
+      _setupDone = true;
       populateSelect();
       populateGroupGrid();
+      bindCameraButtons();
       var selectEl = document.getElementById('restaurantSelect');
       if (selectEl) {
         selectEl.addEventListener('change', function () {
           updateResult(selectEl.value);
         });
       }
-      var cameraBtn = document.getElementById('cameraBtn');
-      var cameraInput = document.getElementById('cameraInput');
-      if (cameraBtn && cameraInput) {
-        cameraBtn.addEventListener('click', function () {
-          cameraInput.click();
-        });
-        cameraInput.addEventListener('change', handleCameraCapture);
-      }
-      var albumBtn = document.getElementById('albumBtn');
-      var albumInput = document.getElementById('albumInput');
-      if (albumBtn && albumInput) {
-        albumBtn.addEventListener('click', function () {
-          albumInput.click();
-        });
-        albumInput.addEventListener('change', handleAlbumSelect);
-      }
     }
 
     document.addEventListener('DOMContentLoaded', setup);
     window.addEventListener('load', setup);
   </script>
-
-  <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none">
-  <input type="file" accept="image/*" id="albumInput" style="display:none" multiple>
 
 </body>
 </html>
