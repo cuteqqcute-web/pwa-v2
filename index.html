@@ -353,27 +353,6 @@
     .camera-btn:active { opacity: 0.7; }
     .camera-btn.album { background: #34c759; }
 
-    .camera-viewfinder {
-      position: relative;
-      width: 100%;
-      max-width: 320px;
-      margin: 0 auto 12px;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #000;
-    }
-    .camera-viewfinder video {
-      width: 100%;
-      display: block;
-      border-radius: 12px;
-    }
-    .camera-viewfinder-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 8px;
-    }
-    .camera-btn.capture { background: #ff3b30; flex: 1.6; }
-    .camera-btn.close { background: #8e8e93; flex: 0.4; }
 
     .photo-grid {
       display: flex;
@@ -453,16 +432,9 @@
         </div>
         <div class="camera" id="camera">
           <p class="camera-title">📸 拍照紀錄</p>
-          <div class="camera-viewfinder" id="cameraView" style="display:none;">
-            <video id="cameraVideo" autoplay playsinline muted></video>
-            <div class="camera-viewfinder-actions">
-              <button class="camera-btn capture" id="btnCapture">📸 拍攝</button>
-              <button class="camera-btn close" id="btnCameraClose">✕ 關閉</button>
-            </div>
-          </div>
-          <canvas id="cameraCanvas" style="display:none;"></canvas>
           <div class="camera-actions">
-            <button class="camera-btn" id="btnCamera">📷 拍照</button>
+            <label for="cameraInput" class="camera-btn" style="flex:1; display:flex; align-items:center; justify-content:center;">📷 拍照</label>
+            <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none;">
             <label class="camera-btn album" style="flex:1; display:flex; align-items:center; justify-content:center;">
               🖼️ 從相簿選取
               <input type="file" accept="image/*" id="albumInput" style="display:none;">
@@ -817,7 +789,6 @@
       _currentAbnormal = label;
       _photoCounter = 0;
       _photos = [];
-      stopCamera();
       var btns = document.querySelectorAll('.abnormal-btn');
       for (var i = 0; i < btns.length; i++) {
         btns[i].classList.remove('selected');
@@ -836,18 +807,10 @@
     var _photos = [];
 
     function bindCameraButtons() {
-      var btnCamera = document.getElementById('btnCamera');
-      var btnCapture = document.getElementById('btnCapture');
-      var btnCameraClose = document.getElementById('btnCameraClose');
+      var cameraInput = document.getElementById('cameraInput');
       var albumInput = document.getElementById('albumInput');
-      if (btnCamera) {
-        btnCamera.addEventListener('click', startCamera);
-      }
-      if (btnCapture) {
-        btnCapture.addEventListener('click', capturePhoto);
-      }
-      if (btnCameraClose) {
-        btnCameraClose.addEventListener('click', stopCamera);
+      if (cameraInput) {
+        cameraInput.addEventListener('change', handleAlbumSelect);
       }
       if (albumInput) {
         albumInput.addEventListener('change', handleAlbumSelect);
@@ -914,58 +877,6 @@
       reader.readAsDataURL(file);
     }
 
-    var _cameraStream = null;
-
-    function startCamera() {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert('此裝置不支援相機功能');
-        return;
-      }
-      var video = document.getElementById('cameraVideo');
-      var viewfinder = document.getElementById('cameraView');
-      if (_cameraStream) {
-        viewfinder.style.display = 'block';
-        return;
-      }
-      navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false
-      }).then(function(stream) {
-        _cameraStream = stream;
-        video.srcObject = stream;
-        video.play();
-        viewfinder.style.display = 'block';
-      }).catch(function(err) {
-        alert('無法開啟相機：' + err.message);
-      });
-    }
-
-    function capturePhoto() {
-      var video = document.getElementById('cameraVideo');
-      var canvas = document.getElementById('cameraCanvas');
-      if (!video.videoWidth) return;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      var ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      var dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-      _photoCounter++;
-      var deviceName = _currentDevice || '未知';
-      var abnormalLabel = _currentAbnormal || '未知';
-      var fileName = generateFileName(deviceName, abnormalLabel, _photoCounter);
-      _photos.push({ dataUrl: dataUrl, fileName: fileName });
-      renderPhotos();
-    }
-
-    function stopCamera() {
-      if (_cameraStream) {
-        _cameraStream.getTracks().forEach(function(t) { t.stop(); });
-        _cameraStream = null;
-      }
-      var viewfinder = document.getElementById('cameraView');
-      if (viewfinder) viewfinder.style.display = 'none';
-    }
-
     function handleAlbumSelect(event) {
       var file = event.target.files[0];
       if (!file) return;
@@ -982,7 +893,6 @@
       _currentAbnormal = null;
       _photoCounter = 0;
       _photos = [];
-      stopCamera();
       var cameraEl = document.getElementById('camera');
       if (cameraEl) cameraEl.style.display = 'none';
       var btns = document.querySelectorAll('.device-btn');
