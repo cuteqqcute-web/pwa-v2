@@ -158,6 +158,8 @@
     function populateSelect() {
       var selectEl = document.getElementById('restaurantSelect');
       if (!selectEl) return;
+      // Clear existing options (keep only the placeholder)
+      selectEl.innerHTML = '<option value="">— 請選擇 —</option>';
       for (var i = 0; i < RESTAURANTS.length; i++) {
         var option = document.createElement('option');
         option.value = RESTAURANTS[i].code;
