@@ -170,6 +170,71 @@
       color: #86868b;
     }
 
+    .devices {
+      margin-top: 16px;
+      display: none;
+    }
+
+    .devices-title {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #86868b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    .device-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .device-btn {
+      padding: 12px 8px;
+      font-size: 0.8125rem;
+      font-family: inherit;
+      font-weight: 500;
+      color: #1d1d1f;
+      background: #f9f9fb;
+      border: 2px solid #e5e5ea;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      text-align: center;
+      word-break: break-word;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .device-btn:hover {
+      border-color: #0071e3;
+      background: #eaf2fd;
+    }
+
+    .device-btn:active {
+      background: #d0e4f9;
+    }
+
+    .device-btn.selected {
+      border-color: #0071e3;
+      background: #0071e3;
+      color: #fff;
+    }
+
+    .device-result {
+      margin-top: 12px;
+      padding: 10px;
+      background: #f9f9fb;
+      border-radius: 12px;
+      text-align: center;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+      color: #86868b;
+    }
+
     footer {
       margin-top: 32px;
       font-size: 0.75rem;
@@ -197,10 +262,15 @@
       <p class="groups-title">請選擇設備群組</p>
       <div class="group-grid" id="groupGrid"></div>
       <div class="group-result" id="groupResult"></div>
+      <div class="devices" id="devices">
+        <p class="devices-title">設備列表</p>
+        <div class="device-grid" id="deviceGrid"></div>
+        <div class="device-result" id="deviceResult"></div>
+      </div>
     </div>
   </div>
 
-  <footer>pwa-v2 &mdash; Phase 2</footer>
+  <footer>pwa-v2 &mdash; Phase 3</footer>
 
   <script>
     const RESTAURANTS = [
@@ -223,6 +293,18 @@
       { code: 'S600', name: '新店北新三' },
       { code: 'S620', name: '中和建一' }
     ];
+
+    var DEVICES_BY_GROUP = {
+      fry: ['高效預熱機/保溫箱', '炸雞保溫箱', '高效能麵包機', '炸爐(炸區&炸雞區)', '炸爐(薯站)', '煎爐'],
+      cold: ['煎區肉櫃冰箱', '炸區掛式(左)', '工作檯冰箱/炸區掛式(右)', '調理台下方冰箱', '服務區冷藏冰箱', '冷凍庫', '冷藏庫', '冷凍薯條分配器'],
+      freeze: ['室外機 冷凍冷藏製冰飲料', '聖代機', '製冰機'],
+      hvac: ['HVAC 室外機', 'HVAC 溫控檢視', 'HVAC 濾網'],
+      drain: ['排煙設備', '截油槽', '截油分配器', '陰井'],
+      clean: ['清洗機', '照明&廚房設備'],
+      tool: ['開罐器', '蕃茄切片器'],
+      safety: ['CO2 偵測器', '瓦斯遮斷閥', '病媒'],
+      other: ['其他', '資料整理']
+    };
 
     var DEVICE_GROUPS = [
       { name: '油炸區', key: 'fry', icon: '🔥' },
@@ -292,6 +374,44 @@
       if (activeBtn) activeBtn.classList.add('selected');
       var resultEl = document.getElementById('groupResult');
       if (resultEl) resultEl.textContent = '已選擇：' + label;
+      populateDeviceGrid(key);
+    }
+
+    function populateDeviceGrid(groupKey) {
+      var devicesEl = document.getElementById('devices');
+      var gridEl = document.getElementById('deviceGrid');
+      var resultEl = document.getElementById('deviceResult');
+      var devices = DEVICES_BY_GROUP[groupKey];
+      if (!devicesEl || !gridEl || !devices || devices.length === 0) {
+        if (devicesEl) devicesEl.style.display = 'none';
+        return;
+      }
+      devicesEl.style.display = 'block';
+      gridEl.innerHTML = '';
+      if (resultEl) resultEl.textContent = '';
+      for (var i = 0; i < devices.length; i++) {
+        (function (deviceName) {
+          var btn = document.createElement('button');
+          btn.className = 'device-btn';
+          btn.textContent = deviceName;
+          btn.addEventListener('click', function () {
+            selectDevice(deviceName);
+          });
+          gridEl.appendChild(btn);
+        })(devices[i]);
+      }
+    }
+
+    function selectDevice(name) {
+      var btns = document.querySelectorAll('.device-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.remove('selected');
+        if (btns[i].textContent === name) {
+          btns[i].classList.add('selected');
+        }
+      }
+      var resultEl = document.getElementById('deviceResult');
+      if (resultEl) resultEl.textContent = '已選擇：' + name;
     }
 
     function setup() {
