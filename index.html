@@ -377,7 +377,7 @@
       var rn = _r ? _r.name : '未知';
       var dt = new Date().toISOString().slice(0,10).replace(/-/g,'');
       var sq = String(seq).padStart(3,'0');
-      return rn + '_' + dn.replace(/[/&]/g,'-') + '_' + al + '_' + dt + '_' + sq + '.jpg';
+      return _r.code + '_' + rn + '_' + dn.replace(/[/&]/g,'-') + '_' + al + '_' + dt + '_' + sq + '.jpg';
     }
 
     function preview(idx) {
