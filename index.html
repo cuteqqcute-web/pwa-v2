@@ -1030,7 +1030,11 @@
     // ===== Editor: Arrowhead =====
     function addArrowhead(ev) {
       if (!canvas) return;
-      var color = editorColor.value, size = +editorSize.value, hl = Math.max(size * 5, 14);
+      var color = editorColor.value;
+      // Sync path stroke to current color (mobile color picker input delay)
+      ev.path.set('stroke', color);
+      ev.path.set({ selectable: false, evented: false });
+      var size = +editorSize.value, hl = Math.max(size * 5, 14);
       var pd = ev.path.path, lc = pd[pd.length - 1];
       var ex = lc[lc.length-2], ey = lc[lc.length-1], sx = ex, sy = ey;
       for (var k = pd.length-2; k >= 0; k--) {
