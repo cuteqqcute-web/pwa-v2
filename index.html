@@ -1008,6 +1008,14 @@
         drawStart = null;
         if (shape) canvas.add(shape), saveState();
       });
+
+      // Sync brush when color/size changes (for pen & arrow preview)
+      editorColor.oninput = function() {
+        if (canvas && canvas.isDrawingMode) canvas.freeDrawingBrush.color = this.value;
+      };
+      editorSize.oninput = function() {
+        if (canvas && canvas.isDrawingMode) canvas.freeDrawingBrush.width = +this.value;
+      };
     }
 
     // ===== Editor: Tool Switching =====
