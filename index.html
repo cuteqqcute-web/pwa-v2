@@ -123,6 +123,10 @@
             <button class="export-btn share" id="shareAllBtn">📤 分享全部</button>
             <button class="export-btn save" id="saveAllBtn">💾 儲存到相簿</button>
           </div>
+          <div class="export-actions" id="reportActions">
+            <button class="export-btn share" id="generateReportBtn" style="background:#ff9500;">📊 產出日巡報告</button>
+          </div>
+          <div id="reportStatus" style="margin-top:8px;text-align:center;font-size:.875rem;display:none;"></div>
         </div>
       </div>
     </div>
@@ -425,6 +429,28 @@
       }
     }
 
+    function generateReport() {
+      var rs = document.getElementById('reportStatus');
+      var btn = document.getElementById('generateReportBtn');
+      rs.style.display = 'block';
+      rs.style.color = '#86868b';
+      rs.textContent = '⏳ 報告產生中，請稍候...';
+      btn.disabled = true;
+      fetch('https://script.google.com/macros/s/AKfycby-1shUCOIiEGcb1Fl3AooAa_0nk6RBQlZZkliS78OKXUC8MynU32gSVSmmMH7fz4Ln/exec')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          rs.style.color = '#34c759';
+          rs.textContent = '✅ 報告已產出！';
+          btn.disabled = false;
+          if (d.reportUrl) window.open(d.reportUrl, '_blank');
+        })
+        .catch(function() {
+          rs.style.color = '#dc3545';
+          rs.textContent = '❌ 報告產出失敗，請確認照片已上傳到「當日待分類相片」資料夾';
+          btn.disabled = false;
+        });
+    }
+
     // ---- Editor (Fabric.js) ----
     var _cv = null, _hist = [], _ds = null, _cr = null, _tool = null, _ts = null;
     var _tb = { pen:'btnPen', line:'btnLine', arrow:'btnArrow', circle:'btnCircle', rect:'btnRect', crop:'btnCrop' };
@@ -583,6 +609,8 @@
       var sb = document.getElementById('shareAllBtn'), sv = document.getElementById('saveAllBtn');
       if (sb) sb.addEventListener('click', share);
       if (sv) sv.addEventListener('click', save);
+      var rb = document.getElementById('generateReportBtn');
+      if (rb) rb.addEventListener('click', generateReport);
     }
 
     function setup() {
