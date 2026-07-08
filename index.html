@@ -425,7 +425,66 @@
       color: #aeaeb2;
       text-align: center;
     }
+    /* ===== Editor Overlay ===== */
+    #editor-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(15,14,23,0.95);
+      display: none; flex-direction: column;
+    }
+    #editor-overlay.active { display: flex; }
+    .editor-toolbar {
+      display: flex; align-items: center; gap: 6px;
+      padding: 10px 12px; background: #1a1a2e;
+      border-bottom: 1px solid #2e2e4a;
+      overflow-x: auto; flex-shrink: 0;
+    }
+    .tool-btn {
+      width: 40px; height: 40px; border-radius: 8px;
+      border: 1px solid #2e2e4a; background: #22223a;
+      color: #fffffe; font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .tool-btn.active { background: #ff8906; border-color: #ff8906; color: #000; }
+    .tool-sep { width: 1px; height: 24px; background: #2e2e4a; flex-shrink: 0; }
+    .tool-color { width: 36px; height: 36px; border-radius: 8px; border: 2px solid #2e2e4a; cursor: pointer; flex-shrink: 0; }
+    .tool-range { width: 80px; flex-shrink: 0; }
+    #fabric-container { flex: 1; overflow: hidden; position: relative; }
+    .editor-bottom-bar {
+      display: flex; gap: 10px; padding: 12px;
+      background: #1a1a2e; border-top: 1px solid #2e2e4a; flex-shrink: 0;
+    }
+    .btn { padding: 12px 20px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: #ff8906; color: #000; flex: 1; }
+    .btn-secondary { background: #1a1a2e; color: #fffffe; border: 1px solid #2e2e4a; }
+
+    /* ===== Preview Overlay ===== */
+    #preview-overlay {
+      position: fixed; inset: 0; z-index: 999;
+      background: rgba(15,14,23,0.95);
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    #preview-overlay.active { display: flex; }
+    .preview-image {
+      max-width: 100%; max-height: 60vh;
+      border-radius: 12px; object-fit: contain;
+    }
+    .preview-actions {
+      display: flex; gap: 10px; margin-top: 20px;
+      flex-wrap: wrap; justify-content: center;
+    }
+    .preview-btn {
+      padding: 14px 24px; border-radius: 12px;
+      border: none; font-size: 16px; font-weight: 600;
+      cursor: pointer; color: #fff;
+    }
+    .preview-btn.edit-btn { background: #ff8906; color: #000; }
+    .preview-btn.confirm-btn { background: #34c759; }
+    .preview-btn.discard-btn { background: #dc3545; }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 </head>
 <body>
 
@@ -472,6 +531,38 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Editor Overlay -->
+  <div id="editor-overlay">
+    <div class="editor-toolbar">
+      <button class="tool-btn" onclick="setTool('pen')" id="btnPen">✏️</button>
+      <button class="tool-btn" onclick="setTool('line')" id="btnLine">📏</button>
+      <button class="tool-btn" onclick="setTool('arrow')" id="btnArrow">➡️</button>
+      <button class="tool-btn" onclick="addText()" title="文字">📝</button>
+      <button class="tool-btn" onclick="setTool('circle')" id="btnCircle">⭕</button>
+      <button class="tool-btn" onclick="setTool('rect')" id="btnRect"><span class="icon-rect">□</span></button>
+      <button class="tool-btn" onclick="setTool('crop')" id="btnCrop">✂️</button>
+      <button class="tool-btn" onclick="undo()">↩️</button>
+      <span class="tool-sep"></span>
+      <input type="color" id="editorColor" value="#ff0000" class="tool-color">
+      <input type="range" id="editorSize" min="1" max="20" value="4" class="tool-range">
+    </div>
+    <div id="fabric-container"></div>
+    <div class="editor-bottom-bar">
+      <button class="btn btn-secondary" onclick="closeEditor()">✕ 取消</button>
+      <button class="btn btn-primary" onclick="saveEditor()">✓ 完成</button>
+    </div>
+  </div>
+
+  <!-- Preview Overlay -->
+  <div id="preview-overlay">
+    <img id="previewImage" class="preview-image" src="" alt="預覽">
+    <div class="preview-actions">
+      <button class="preview-btn edit-btn" onclick="openEditorFromPreview()">✏️ 編輯</button>
+      <button class="preview-btn confirm-btn" onclick="confirmPhoto()">✓ 加入</button>
+      <button class="preview-btn discard-btn" onclick="discardPhoto()">✕ 捨棄</button>
     </div>
   </div>
 
@@ -832,6 +923,236 @@
 
     var _photos = [];
 
+    // ===== Editor State =====
+    var state = { currentPhoto: null, editingPhotoIndex: null };
+    var canvas = null, editorHistory = [], drawStart = null;
+    var cropRect = null, currentTool = null, tempShape = null;
+
+    // ===== Editor: Initialization =====
+    function initEditor(imageURL, containerId) {
+      var container = document.getElementById(containerId);
+      container.innerHTML = '';
+      var w = Math.max(300, window.innerWidth);
+      var h = Math.max(300, window.innerHeight - 120);
+      var el = document.createElement('canvas');
+      el.id = 'fabric-canvas'; el.width = w; el.height = h;
+      container.appendChild(el);
+
+      canvas = new fabric.Canvas(el, { width: w, height: h, backgroundColor: '#2a2a3e', isDrawingMode: false, selection: false });
+
+      var img = new Image();
+      img.onload = function() {
+        var scale = Math.min(w / img.width, h / img.height) * 0.95;
+        var fi = new fabric.Image(img, { scaleX: scale, scaleY: scale, originX: 'center', originY: 'center', left: w/2, top: h/2 });
+        canvas.setBackgroundImage(fi, canvas.renderAll.bind(canvas));
+        saveState();
+      };
+      img.src = imageURL;
+
+      canvas.on('object:modified', saveState);
+      canvas.on('path:created', function(ev) {
+        if (currentTool === 'arrow') addArrowhead(ev);
+        ev.path.set({ selectable: false, evented: false });
+        saveState();
+      });
+      canvas.on('text:editing:exited', saveState);
+
+      canvas.on('mouse:down', function(opt) {
+        if (drawStart) return;
+        if ('line,circle,rect,crop'.indexOf(currentTool) >= 0) drawStart = canvas.getPointer(opt.e);
+      });
+      canvas.on('mouse:move', function(opt) {
+        if (!drawStart || 'line,circle,rect,crop'.indexOf(currentTool) < 0) return;
+        var p = canvas.getPointer(opt.e), color = editorColor.value, size = +editorSize.value;
+        if (tempShape) canvas.remove(tempShape);
+        switch (currentTool) {
+          case 'line':
+            tempShape = new fabric.Line([drawStart.x, drawStart.y, p.x, p.y], { stroke: color, strokeWidth: size, selectable: false, evented: false, opacity: 0.6 }); break;
+          case 'circle':
+            var side = Math.max(Math.abs(p.x - drawStart.x), Math.abs(p.y - drawStart.y));
+            tempShape = new fabric.Ellipse({ left: Math.min(drawStart.x, p.x), top: Math.min(drawStart.y, p.y), rx: Math.max(side/2,5), ry: Math.max(side/2,5), fill: 'transparent', stroke: color, strokeWidth: size, selectable: false, evented: false, opacity: 0.6 }); break;
+          case 'rect':
+            tempShape = new fabric.Rect({ left: Math.min(drawStart.x, p.x), top: Math.min(drawStart.y, p.y), width: Math.max(Math.abs(p.x-drawStart.x),5), height: Math.max(Math.abs(p.y-drawStart.y),5), fill: 'transparent', stroke: color, strokeWidth: size, selectable: false, evented: false, opacity: 0.6 }); break;
+          case 'crop':
+            tempShape = new fabric.Rect({ left: Math.min(drawStart.x, p.x), top: Math.min(drawStart.y, p.y), width: Math.max(Math.abs(p.x-drawStart.x),5), height: Math.max(Math.abs(p.y-drawStart.y),5), fill: 'rgba(255,255,255,0.08)', stroke: '#ff8906', strokeWidth: 2, strokeDashArray: [6,4], selectable: false, evented: false, opacity: 0.6 }); break;
+        }
+        if (tempShape) canvas.add(tempShape), canvas.renderAll();
+      });
+      canvas.on('mouse:up', function(opt) {
+        if (!drawStart || 'line,circle,rect,crop'.indexOf(currentTool) < 0) return;
+        if (tempShape) canvas.remove(tempShape), tempShape = null;
+        var p = canvas.getPointer(opt.e), dx = p.x - drawStart.x, dy = p.y - drawStart.y;
+        if (Math.abs(dx) < 3 && Math.abs(dy) < 3) { drawStart = null; return; }
+        var color = editorColor.value, size = +editorSize.value, shape;
+        switch (currentTool) {
+          case 'line':
+            shape = new fabric.Line([drawStart.x, drawStart.y, p.x, p.y], { stroke: color, strokeWidth: size, selectable: false, evented: false }); break;
+          case 'circle':
+            var side = Math.max(Math.abs(dx), Math.abs(dy));
+            shape = new fabric.Ellipse({ left: Math.min(drawStart.x, p.x), top: Math.min(drawStart.y, p.y), rx: side/2, ry: side/2, fill: 'transparent', stroke: color, strokeWidth: size, selectable: false, evented: false }); break;
+          case 'rect':
+            shape = new fabric.Rect({ left: Math.min(drawStart.x, p.x), top: Math.min(drawStart.y, p.y), width: Math.abs(dx), height: Math.abs(dy), fill: 'transparent', stroke: color, strokeWidth: size, selectable: false, evented: false }); break;
+          case 'crop':
+            if (cropRect) { canvas.remove(cropRect); if (editorHistory.length > 1) editorHistory.pop(); }
+            shape = new fabric.Rect({ left: Math.min(drawStart.x, p.x), top: Math.min(drawStart.y, p.y), width: Math.abs(dx), height: Math.abs(dy), fill: 'rgba(255,255,255,0.08)', stroke: '#ff8906', strokeWidth: 2, strokeDashArray: [6,4], hasRotatingPoint: false, selectable: true, evented: true });
+            cropRect = shape; break;
+        }
+        drawStart = null;
+        if (shape) canvas.add(shape), saveState();
+      });
+    }
+
+    // ===== Editor: Tool Switching =====
+    function setTool(tool) {
+      if (!canvas) return;
+      currentTool = tool; drawStart = null;
+      document.querySelectorAll('.tool-btn').forEach(function(b) { b.classList.remove('active'); });
+      var map = { pen:'btnPen', line:'btnLine', arrow:'btnArrow', circle:'btnCircle', rect:'btnRect', crop:'btnCrop' };
+      var el = document.getElementById(map[tool]); if (el) el.classList.add('active');
+      var drawing = tool === 'pen' || tool === 'arrow';
+      canvas.isDrawingMode = drawing;
+      canvas.selection = !drawing && tool !== 'line' && tool !== 'circle' && tool !== 'rect' && tool !== 'crop';
+      if (drawing) {
+        canvas.freeDrawingBrush.width = +editorSize.value;
+        canvas.freeDrawingBrush.color = editorColor.value;
+      }
+      if (tool === 'crop' && cropRect) { canvas.remove(cropRect); cropRect = null; }
+    }
+
+    // ===== Editor: Arrowhead =====
+    function addArrowhead(ev) {
+      if (!canvas) return;
+      var color = editorColor.value, size = +editorSize.value, hl = Math.max(size * 5, 14);
+      var pd = ev.path.path, lc = pd[pd.length - 1];
+      var ex = lc[lc.length-2], ey = lc[lc.length-1], sx = ex, sy = ey;
+      for (var k = pd.length-2; k >= 0; k--) {
+        var c = pd[k], cx = c[c.length-2], cy = c[c.length-1];
+        if (Math.sqrt((ex-cx)*(ex-cx) + (ey-cy)*(ey-cy)) > 5) { sx = cx; sy = cy; break; }
+      }
+      var dx = ex - sx, dy = ey - sy;
+      if (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1) { dx = 1; dy = 0; }
+      var p = ev.e ? canvas.getPointer(ev.e) : { x: ex, y: ey };
+      var tri = new fabric.Triangle({ left: p.x, top: p.y, originX: 'center', originY: 'center', width: hl, height: hl, angle: Math.atan2(dy,dx)*180/Math.PI+90, fill: color, selectable: false, evented: false });
+      canvas.add(tri);
+    }
+
+    // ===== Editor: Text =====
+    function addText() {
+      if (!canvas) return;
+      setTool(null); var text = prompt('請輸入文字：');
+      if (!text) return;
+      var t = new fabric.IText(text, { left: canvas.width/2-40, top: canvas.height/2-15, fontSize: Math.max(+editorSize.value*6,12), fill: editorColor.value, fontFamily: 'Arial,sans-serif' });
+      canvas.add(t); canvas.setActiveObject(t); saveState();
+    }
+
+    // ===== Editor: Undo =====
+    function saveState() {
+      if (!canvas) return;
+      if (editorHistory.length > 30) editorHistory.shift();
+      editorHistory.push(JSON.stringify(canvas.toJSON(['backgroundImage'])));
+    }
+    function undo() {
+      if (!canvas || editorHistory.length <= 1) return;
+      if (cropRect) { canvas.remove(cropRect); cropRect = null; }
+      editorHistory.pop();
+      var bg = state.currentPhoto;
+      canvas.loadFromJSON(JSON.parse(editorHistory[editorHistory.length-1]), function() {
+        canvas.getObjects().forEach(function(o) { o.set({ selectable: false, evented: false }); });
+        if (bg && !canvas.backgroundImage) {
+          var w = canvas.width, h = canvas.height;
+          fabric.Image.fromURL(bg, function(img) {
+            img.set({ scaleX: Math.min(w/img.width,h/img.height)*0.95, scaleY: Math.min(w/img.width,h/img.height)*0.95, originX:'center', originY:'center', left:w/2, top:h/2 });
+            canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+          });
+        } else canvas.renderAll();
+      });
+    }
+
+    // ===== Editor: Save / Close =====
+    function saveEditor() {
+      if (!canvas) return;
+      if (cropRect) { applyCrop(function() { finalizeSave(); }); return; }
+      finalizeSave();
+    }
+    function finalizeSave() {
+      state.currentPhoto = canvas.toDataURL({ format: 'jpeg', quality: 0.92 });
+      closeEditor();
+    }
+    function closeEditor() {
+      if (canvas) canvas.dispose();
+      canvas = null; editorHistory = []; drawStart = null; cropRect = null; currentTool = null; tempShape = null;
+      document.getElementById('editor-overlay').classList.remove('active');
+      // Go back to preview with updated photo
+      document.getElementById('previewImage').src = state.currentPhoto;
+      document.getElementById('preview-overlay').classList.add('active');
+    }
+
+    // ===== Editor: Crop =====
+    function applyCrop(cb) {
+      if (!canvas || !cropRect) { if (cb) cb(); return; }
+      var r = cropRect.getBoundingRect(true);
+      cropRect.visible = false; canvas.renderAll();
+      var url = canvas.toDataURL({ format: 'jpeg', quality: 0.92 });
+      cropRect.visible = true; canvas.renderAll();
+      var img = new Image();
+      img.onload = function() {
+        var t = document.createElement('canvas');
+        t.width = Math.round(r.width); t.height = Math.round(r.height);
+        t.getContext('2d').drawImage(img, Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height), 0, 0, Math.round(r.width), Math.round(r.height));
+        canvas.remove(cropRect); cropRect = null;
+        canvas.clear(); canvas.setWidth(r.width); canvas.setHeight(r.height);
+        fabric.Image.fromURL(t.toDataURL('image/jpeg',0.92), function(fi) {
+          fi.set({ scaleX:1, scaleY:1, originX:'center', originY:'center', left:r.width/2, top:r.height/2 });
+          canvas.setBackgroundImage(fi, function() { canvas.renderAll(); editorHistory = []; saveState(); if (cb) cb(); });
+        });
+      };
+      img.src = url;
+    }
+
+    // ===== Preview Functions =====
+    function showPreviewForExisting(idx) {
+      state.currentPhoto = _photos[idx].dataUrl;
+      state.editingPhotoIndex = idx;
+      document.getElementById('previewImage').src = state.currentPhoto;
+      document.getElementById('preview-overlay').classList.add('active');
+    }
+
+    function openEditorFromPreview() {
+      document.getElementById('preview-overlay').classList.remove('active');
+      document.getElementById('editor-overlay').classList.add('active');
+      initEditor(state.currentPhoto, 'fabric-container');
+    }
+
+    function confirmPhoto() {
+      document.getElementById('preview-overlay').classList.remove('active');
+      if (state.editingPhotoIndex !== null && state.editingPhotoIndex !== undefined) {
+        // Editing existing photo
+        _photos[state.editingPhotoIndex].dataUrl = state.currentPhoto;
+      } else {
+        // New photo
+        var deviceName = _currentDevice || '未知';
+        var abnormalLabel = _currentAbnormal || '未知';
+        var fileName = generateFileName(deviceName, abnormalLabel, _photoCounter);
+        _photos.push({
+          dataUrl: state.currentPhoto,
+          fileName: fileName
+        });
+      }
+      state.currentPhoto = null;
+      state.editingPhotoIndex = null;
+      renderPhotos();
+    }
+
+    function discardPhoto() {
+      document.getElementById('preview-overlay').classList.remove('active');
+      if (state.editingPhotoIndex === null || state.editingPhotoIndex === undefined) {
+        // New photo being discarded - decrement counter since we already incremented
+        _photoCounter = Math.max(0, _photoCounter - 1);
+      }
+      state.currentPhoto = null;
+      state.editingPhotoIndex = null;
+    }
+
     function bindCameraButtons() {
       var cameraInput = document.getElementById('cameraInput');
       var albumInput = document.getElementById('albumInput');
@@ -912,7 +1233,12 @@
           item.className = 'photo-item';
           var img = document.createElement('img');
           img.src = p.dataUrl;
-          img.title = p.fileName;
+          img.title = p.fileName + ' (點擊編輯)';
+          img.style.cursor = 'pointer';
+          img.addEventListener('click', function (e) {
+            e.stopPropagation();
+            showPreviewForExisting(idx);
+          });
           item.appendChild(img);
           var del = document.createElement('button');
           del.className = 'photo-del';
@@ -934,14 +1260,10 @@
       var reader = new FileReader();
       reader.onload = function (e) {
         _photoCounter++;
-        var deviceName = _currentDevice || '未知';
-        var abnormalLabel = _currentAbnormal || '未知';
-        var fileName = generateFileName(deviceName, abnormalLabel, _photoCounter);
-        _photos.push({
-          dataUrl: e.target.result,
-          fileName: fileName
-        });
-        renderPhotos();
+        state.currentPhoto = e.target.result;
+        state.editingPhotoIndex = null;
+        document.getElementById('previewImage').src = state.currentPhoto;
+        document.getElementById('preview-overlay').classList.add('active');
       };
       reader.readAsDataURL(file);
     }
