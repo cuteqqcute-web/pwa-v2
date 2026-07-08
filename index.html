@@ -972,17 +972,18 @@
       canvas.on('mouse:move', function(opt) {
         if (!drawStart || 'line,circle,rect,crop'.indexOf(currentTool) < 0) return;
         var p = canvas.getPointer(opt.e), color = editorColor.value, size = +editorSize.value;
+        var dx = p.x - drawStart.x, dy = p.y - drawStart.y;
         if (tempShape) canvas.remove(tempShape);
         switch (currentTool) {
           case 'line':
             tempShape = new fabric.Line([drawStart.x, drawStart.y, p.x, p.y], { stroke: color, strokeWidth: size, selectable: false, evented: false, opacity: 0.6 }); break;
           case 'circle':
-            var side = Math.max(Math.abs(p.x - drawStart.x), Math.abs(p.y - drawStart.y));
+            var side = Math.max(Math.abs(dx), Math.abs(dy));
             tempShape = new fabric.Ellipse({ left: Math.min(drawStart.x, p.x), top: Math.min(drawStart.y, p.y), rx: Math.max(side/2,5), ry: Math.max(side/2,5), fill: 'transparent', stroke: color, strokeWidth: size, selectable: false, evented: false, opacity: 0.6 }); break;
           case 'rect':
-            tempShape = new fabric.Rect({ left: Math.min(drawStart.x, p.x), top: Math.min(drawStart.y, p.y), width: Math.max(Math.abs(p.x-drawStart.x),5), height: Math.max(Math.abs(p.y-drawStart.y),5), fill: 'transparent', stroke: color, strokeWidth: size, selectable: false, evented: false, opacity: 0.6 }); break;
+            tempShape = new fabric.Rect({ left: Math.min(drawStart.x, p.x), top: Math.min(drawStart.y, p.y), width: Math.max(Math.abs(dx),5), height: Math.max(Math.abs(dy),5), fill: 'transparent', stroke: color, strokeWidth: size, selectable: false, evented: false, opacity: 0.6 }); break;
           case 'crop':
-            tempShape = new fabric.Rect({ left: Math.min(drawStart.x, p.x), top: Math.min(drawStart.y, p.y), width: Math.max(Math.abs(p.x-drawStart.x),5), height: Math.max(Math.abs(p.y-drawStart.y),5), fill: 'rgba(255,255,255,0.08)', stroke: '#ff8906', strokeWidth: 2, strokeDashArray: [6,4], selectable: false, evented: false, opacity: 0.6 }); break;
+            tempShape = new fabric.Rect({ left: Math.min(drawStart.x, p.x), top: Math.min(drawStart.y, p.y), width: Math.max(Math.abs(dx),5), height: Math.max(Math.abs(dy),5), fill: 'rgba(255,255,255,0.08)', stroke: '#ff8906', strokeWidth: 2, strokeDashArray: [6,4], selectable: false, evented: false, opacity: 0.6 }); break;
         }
         if (tempShape) canvas.add(tempShape), canvas.renderAll();
       });
@@ -1038,16 +1039,15 @@
     // ===== Editor: Arrowhead =====
     function addArrowhead(ev) {
       if (!canvas) return;
-      var color = editorColor.value;
+      var color = editorColor.value, size = +editorSize.value, hl = Math.max(size * 5, 14);
       // Sync path stroke to current color (mobile color picker input delay)
       ev.path.set('stroke', color);
       ev.path.set({ selectable: false, evented: false });
-      var size = +editorSize.value, hl = Math.max(size * 5, 14);
       var pd = ev.path.path, lc = pd[pd.length - 1];
       var ex = lc[lc.length-2], ey = lc[lc.length-1], sx = ex, sy = ey;
       for (var k = pd.length-2; k >= 0; k--) {
         var c = pd[k], cx = c[c.length-2], cy = c[c.length-1];
-        if (Math.sqrt((ex-cx)*(ex-cx) + (ey-cy)*(ey-cy)) > 5) { sx = cx; sy = cy; break; }
+        if (Math.hypot(ex-cx, ey-cy) > 5) { sx = cx; sy = cy; break; }
       }
       var dx = ex - sx, dy = ey - sy;
       if (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1) { dx = 1; dy = 0; }
