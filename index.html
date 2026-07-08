@@ -375,9 +375,11 @@
 
     function genFN(dn, al, seq) {
       var rn = _r ? _r.name : '未知';
-      var dt = new Date().toISOString().slice(0,10).replace(/-/g,'');
+      var now = new Date();
+      var dt = now.toISOString().slice(0,10).replace(/-/g,'');
+      var tm = String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
       var sq = String(seq).padStart(3,'0');
-      return _r.code + '_' + rn + '_' + dn.replace(/[/&]/g,'-') + '_' + al + '_' + dt + '_' + sq + '.jpg';
+      return _r.code + '_' + rn + '_' + dn.replace(/[/&]/g,'-') + '_' + al + '_' + dt + '_' + tm + '_' + sq + '.jpg';
     }
 
     function preview(idx) {
@@ -436,7 +438,7 @@
       rs.style.color = '#86868b';
       rs.textContent = '⏳ 報告產生中，請稍候...';
       btn.disabled = true;
-      fetch('https://script.google.com/macros/s/AKfycbzavrc0Cxc-Kvxg-_NNIcaOypFIwij0tBtidlQYf2ac0ppZjNI2immVK_x38Jnwbpch/exec')
+      fetch('https://script.google.com/macros/s/AKfycbwYMwSeJX1sdZUuG0iUZ45NPEAfNPkpR2bN1BElh1TPHvuYP9tsggw8gLWRnbHs3bgE/exec')
         .then(function(r) { return r.json(); })
         .then(function(d) {
           rs.style.color = '#34c759';
