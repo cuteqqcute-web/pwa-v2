@@ -436,6 +436,8 @@
       var btn = document.getElementById('generateReportBtn');
       rs.style.display = 'block';
       rs.style.color = '#86868b';
+      // 清除殘留鎖定（前一晚可能 timeout 沒跑到）
+      localStorage.removeItem('v2-report-gen');
       if (localStorage.getItem('v2-report-gen')) return;
       localStorage.setItem('v2-report-gen', '1');
       rs.style.display = 'block';
