@@ -436,21 +436,10 @@
       var btn = document.getElementById('generateReportBtn');
       rs.style.display = 'block';
       rs.style.color = '#86868b';
-      rs.textContent = '⏳ 報告產生中，請稍候...';
+      rs.textContent = '⏳ 報告產生中，請稍候...（約 3 分鐘）';
       btn.disabled = true;
-      fetch('https://script.google.com/macros/s/AKfycbyo718PNpQRfjmiBjCQNyIBibgkUTLgM-mEM95HJwWOg-2h6-rK4uffvJ5sbMw3PsV5/exec')
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-          rs.style.color = '#34c759';
-          rs.textContent = '✅ 報告已產出！';
-          btn.disabled = false;
-          if (d.reportUrl) window.open(d.reportUrl, '_blank');
-        })
-        .catch(function() {
-          rs.style.color = '#dc3545';
-          rs.textContent = '❌ 報告產出失敗，請確認照片已上傳到「當日待分類相片」資料夾';
-          btn.disabled = false;
-        });
+      window.open('https://script.google.com/macros/s/AKfycbyo718PNpQRfjmiBjCQNyIBibgkUTLgM-mEM95HJwWOg-2h6-rK4uffvJ5sbMw3PsV5/exec?mode=web', '_blank');
+      setTimeout(function(){ rs.style.color = '#34c759'; rs.textContent = '✅ 報告產出後會自動開啟新分頁'; btn.disabled = false; }, 3000);
     }
 
     // ---- Editor (Fabric.js) ----
