@@ -438,8 +438,7 @@
       rs.style.color = '#86868b';
       rs.textContent = '⏳ 報告產生中，請稍候...（約 3 分鐘）';
       btn.disabled = true;
-      window.open('https://script.google.com/macros/s/AKfycbyo718PNpQRfjmiBjCQNyIBibgkUTLgM-mEM95HJwWOg-2h6-rK4uffvJ5sbMw3PsV5/exec?mode=web', '_blank');
-      setTimeout(function(){ rs.style.color = '#34c759'; rs.textContent = '✅ 報告產出後會自動開啟新分頁'; btn.disabled = false; }, 3000);
+      window.location.href = 'https://script.google.com/macros/s/AKfycbyo718PNpQRfjmiBjCQNyIBibgkUTLgM-mEM95HJwWOg-2h6-rK4uffvJ5sbMw3PsV5/exec?mode=web';
     }
 
     // ---- Editor (Fabric.js) ----
