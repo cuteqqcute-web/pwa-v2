@@ -436,8 +436,12 @@
       var btn = document.getElementById('generateReportBtn');
       rs.style.display = 'block';
       rs.style.color = '#86868b';
-      rs.textContent = '⏳ 報告產生中，請稍候...（約 3 分鐘）';
+      rs.textContent = '⏳ 報告產生中...（約 3 分鐘）自動跳轉';
+      rs.style.display = 'block';
       btn.disabled = true;
+      btn.style.opacity = '0.5';
+      btn.textContent = '⏳ 產生中...';
+      // 用 location.href 導航到 App Script，一次請求，避免多開
       window.location.href = 'https://script.google.com/macros/s/AKfycbyo718PNpQRfjmiBjCQNyIBibgkUTLgM-mEM95HJwWOg-2h6-rK4uffvJ5sbMw3PsV5/exec?mode=web';
     }
 
