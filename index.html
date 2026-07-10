@@ -79,7 +79,7 @@
     .preview-btn.discard-btn{background:#dc3545}
     /* ===== Wizard Layout ===== */
     body{padding:0;justify-content:flex-start}
-    .card{height:100vh;max-height:100vh;display:flex;flex-direction:column;border-radius:0;padding:8px 16px 8px;max-width:430px;margin:0 auto}
+    .card{height:100vh;max-height:100vh;display:flex;flex-direction:column;border-radius:0;padding:8px 16px;max-width:430px;margin:0 auto}
     .wizard-progress{display:flex;justify-content:center;align-items:center;gap:10px;padding:8px 0 12px;flex-shrink:0}
     .wiz-dot{width:10px;height:10px;border-radius:50%;background:#d2d2d7;transition:all .3s ease}
     .wiz-dot.active{background:#0071e3;width:12px;height:12px;box-shadow:0 0 0 3px rgba(0,113,227,0.2)}
@@ -176,7 +176,7 @@
         <p class="camera-title">📸 拍照紀錄</p>
         <div class="camera-actions">
           <label for="cameraInput" class="camera-btn" style="flex:1;display:flex;align-items:center;justify-content:center">📷 拍照</label>
-          <input type="file" accept="image/*" capture=environment id="cameraInput" style="display:none">
+          <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none">
           <label class="camera-btn album" style="flex:1;display:flex;align-items:center;justify-content:center">
             🖼️ 從相簿選取
             <input type="file" accept="image/*" id="albumInput" style="display:none">
