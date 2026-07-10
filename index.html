@@ -91,8 +91,7 @@
     .summary-item:last-child{border-bottom:none}
     .summary-label{color:#86868b;font-size:.8125rem}
     .summary-val{font-weight:600;color:#1d1d1f;text-align:right}
-    .wizard-nav{flex-shrink:0;padding:4px 0 0;display:flex;justify-content:center;margin-top:auto}
-    .wizard-prev-btn{padding:8px 20px;font-size:.8125rem;font-family:inherit;font-weight:600;color:#0071e3;background:#fff;border:2px solid #0071e3;border-radius:10px;cursor:pointer;transition:opacity .15s ease;-webkit-tap-highlight-color:transparent}
+    .wizard-prev-btn{padding:11px 28px;font-size:.9375rem;font-family:inherit;font-weight:600;color:#0071e3;background:#fff;border:2px solid #0071e3;border-radius:12px;cursor:pointer;transition:opacity .15s ease;-webkit-tap-highlight-color:transparent}
     .wizard-prev-btn:hover{opacity:.8}
     .wizard-prev-btn:active{opacity:.6}
     h1{font-size:1.35rem}
@@ -134,6 +133,9 @@
         <div class="group-grid" id="groupGrid"></div>
         <div class="group-result" id="groupResult"></div>
       </div>
+      <div style="padding:12px 0 8px;display:flex;justify-content:center;">
+        <button class="wizard-prev-btn" onclick="prevPage()" style="display:none;">← 上一步</button>
+      </div>
     </div>
 
     <!-- Page 2: 設備 + 異常狀態 -->
@@ -151,6 +153,9 @@
         <p class="abnormals-title">異常狀態</p>
         <div class="abnormal-grid" id="abnormalGrid"></div>
         <div class="abnormal-result" id="abnormalResult"></div>
+      </div>
+      <div style="padding:12px 0 8px;display:flex;justify-content:center;">
+        <button class="wizard-prev-btn" onclick="prevPage()" style="display:none;">← 上一步</button>
       </div>
     </div>
 
@@ -187,11 +192,9 @@
         </div>
         <div id="reportStatus" style="margin-top:8px;text-align:center;font-size:.875rem;display:none;"></div>
       </div>
-    </div>
-
-    <!-- Bottom Navigation -->
-    <div class="wizard-nav">
-      <button class="wizard-prev-btn" id="wizPrevBtn" onclick="prevPage()" style="display:none;">← 上一步</button>
+      <div style="padding:12px 0 8px;display:flex;justify-content:center;">
+        <button class="wizard-prev-btn" onclick="prevPage()" style="display:none;">← 上一步</button>
+      </div>
     </div>
 
   </div>
@@ -729,8 +732,10 @@
       }
 
       // Prev button
-      var btn = document.getElementById('wizPrevBtn');
-      if (btn) btn.style.display = n > 1 ? 'inline-block' : 'none';
+      var btns = document.querySelectorAll('.wizard-prev-btn');
+      for (var k = 0; k < btns.length; k++) {
+        btns[k].style.display = n > 1 ? 'inline-block' : 'none';
+      }
 
       if (n === 3) updateSummary();
     }
