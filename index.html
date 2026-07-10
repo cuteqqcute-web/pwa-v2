@@ -77,59 +77,123 @@
     .preview-btn.edit-btn{background:#ff8906;color:#000}
     .preview-btn.confirm-btn{background:#34c759}
     .preview-btn.discard-btn{background:#dc3545}
+    /* ===== Wizard Layout ===== */
+    body{padding:0;justify-content:flex-start}
+    .card{height:100vh;max-height:100vh;display:flex;flex-direction:column;border-radius:0;padding:12px 16px 16px;max-width:430px;margin:0 auto}
+    .wizard-progress{display:flex;justify-content:center;align-items:center;gap:10px;padding:8px 0 12px;flex-shrink:0}
+    .wiz-dot{width:10px;height:10px;border-radius:50%;background:#d2d2d7;transition:all .3s ease}
+    .wiz-dot.active{background:#0071e3;width:12px;height:12px;box-shadow:0 0 0 3px rgba(0,113,227,0.2)}
+    .wiz-dot.done{background:#34c759}
+    .wizard-page{display:none;flex:1;overflow-y:auto;flex-direction:column;padding:0 4px 8px;-webkit-overflow-scrolling:touch}
+    .wizard-page.active{display:flex}
+    .wizard-summary{background:#f9f9fb;border-radius:12px;padding:16px;margin-bottom:16px}
+    .summary-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:.875rem;border-bottom:1px solid #e5e5ea}
+    .summary-item:last-child{border-bottom:none}
+    .summary-label{color:#86868b;font-size:.8125rem}
+    .summary-val{font-weight:600;color:#1d1d1f;text-align:right}
+    .wizard-nav{flex-shrink:0;padding:10px 0 4px;display:flex;justify-content:center}
+    .wizard-prev-btn{padding:11px 28px;font-size:.9375rem;font-family:inherit;font-weight:600;color:#0071e3;background:#fff;border:2px solid #0071e3;border-radius:12px;cursor:pointer;transition:opacity .15s ease;-webkit-tap-highlight-color:transparent}
+    .wizard-prev-btn:hover{opacity:.8}
+    .wizard-prev-btn:active{opacity:.6}
+    h1{font-size:1.35rem}
+    .subtitle{font-size:.8125rem;margin-bottom:14px}
+    footer{margin-top:auto;padding:8px 0}
+    /* Ensure wizard-page sections don't have conflicting margin */
+    .wizard-page .devices,.wizard-page .abnormals,.wizard-page .camera{margin-top:0}
+    .wizard-page .groups{margin-top:0}
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 </head>
 <body>
 
   <div class="card">
-    <h1>🍽 餐廳選擇</h1>
-    <p class="subtitle">請選擇一間餐廳</p>
 
-    <label for="restaurantSelect">餐廳名稱</label>
-    <select id="restaurantSelect">
-      <option value="">— 請選擇 —</option>
-    </select>
-
-    <div class="result" id="result">
-      <span class="placeholder">尚未選擇</span>
+    <!-- Progress Dots -->
+    <div class="wizard-progress" id="wizProgress">
+      <span class="wiz-dot active" data-step="1"></span>
+      <span class="wiz-dot" data-step="2"></span>
+      <span class="wiz-dot" data-step="3"></span>
     </div>
 
-    <div class="groups" id="groups" style="display:none;">
-      <p class="groups-title">請選擇設備群組</p>
-      <div class="group-grid" id="groupGrid"></div>
-      <div class="group-result" id="groupResult"></div>
+    <!-- Page 1: 餐廳 + 設備群組 -->
+    <div class="wizard-page active" id="wiz-page-1">
+      <h1>🍽 餐廳選擇</h1>
+      <p class="subtitle">請選擇一間餐廳</p>
+
+      <label for="restaurantSelect">餐廳名稱</label>
+      <select id="restaurantSelect">
+        <option value="">— 請選擇 —</option>
+      </select>
+
+      <div class="result" id="result">
+        <span class="placeholder">尚未選擇</span>
+      </div>
+
+      <div class="groups" id="groups" style="display:none;">
+        <p class="groups-title">請選擇設備群組</p>
+        <div class="group-grid" id="groupGrid"></div>
+        <div class="group-result" id="groupResult"></div>
+      </div>
+    </div>
+
+    <!-- Page 2: 設備 + 異常狀態 -->
+    <div class="wizard-page" id="wiz-page-2">
+      <h1>🔧 設備檢查</h1>
+      <p class="subtitle">選擇設備與異常狀態</p>
+
       <div class="devices" id="devices">
         <p class="devices-title">設備列表</p>
         <div class="device-grid" id="deviceGrid"></div>
         <div class="device-result" id="deviceResult"></div>
-        <div class="abnormals" id="abnormals">
-          <p class="abnormals-title">異常狀態</p>
-          <div class="abnormal-grid" id="abnormalGrid"></div>
-          <div class="abnormal-result" id="abnormalResult"></div>
-        </div>
-        <div class="camera" id="camera">
-          <p class="camera-title">📸 拍照紀錄</p>
-          <div class="camera-actions">
-            <label for="cameraInput" class="camera-btn" style="flex:1;display:flex;align-items:center;justify-content:center">📷 拍照</label>
-            <input type="file" accept="image/*" capture=environment id="cameraInput" style="display:none">
-            <label class="camera-btn album" style="flex:1;display:flex;align-items:center;justify-content:center">
-              🖼️ 從相簿選取
-              <input type="file" accept="image/*" id="albumInput" style="display:none">
-            </label>
-          </div>
-          <div class="photo-grid" id="photoGrid"></div>
-          <div class="export-actions" id="exportActions" style="display:none;">
-            <button class="export-btn share" id="shareAllBtn">📤 分享全部</button>
-            <button class="export-btn save" id="saveAllBtn">💾 儲存到相簿</button>
-          </div>
-          <div class="export-actions" id="reportActions">
-            <button class="export-btn share" id="generateReportBtn" style="background:#ff9500;">📊 產出日巡報告</button>
-          </div>
-          <div id="reportStatus" style="margin-top:8px;text-align:center;font-size:.875rem;display:none;"></div>
-        </div>
+      </div>
+
+      <div class="abnormals" id="abnormals" style="display:none;">
+        <p class="abnormals-title">異常狀態</p>
+        <div class="abnormal-grid" id="abnormalGrid"></div>
+        <div class="abnormal-result" id="abnormalResult"></div>
       </div>
     </div>
+
+    <!-- Page 3: 預覽 + 產出 -->
+    <div class="wizard-page" id="wiz-page-3">
+      <h1>📋 報告預覽</h1>
+      <p class="subtitle">確認資料並產出報告</p>
+
+      <div class="wizard-summary" id="wizardSummary">
+        <div class="summary-item"><span class="summary-label">餐廳</span><span class="summary-val" id="sumRestaurant">—</span></div>
+        <div class="summary-item"><span class="summary-label">設備群組</span><span class="summary-val" id="sumGroup">—</span></div>
+        <div class="summary-item"><span class="summary-label">設備</span><span class="summary-val" id="sumDevice">—</span></div>
+        <div class="summary-item"><span class="summary-label">異常狀態</span><span class="summary-val" id="sumAbnormal">—</span></div>
+        <div class="summary-item"><span class="summary-label">照片數量</span><span class="summary-val" id="sumPhotos">0</span></div>
+      </div>
+
+      <div class="camera" id="camera">
+        <p class="camera-title">📸 拍照紀錄</p>
+        <div class="camera-actions">
+          <label for="cameraInput" class="camera-btn" style="flex:1;display:flex;align-items:center;justify-content:center">📷 拍照</label>
+          <input type="file" accept="image/*" capture=environment id="cameraInput" style="display:none">
+          <label class="camera-btn album" style="flex:1;display:flex;align-items:center;justify-content:center">
+            🖼️ 從相簿選取
+            <input type="file" accept="image/*" id="albumInput" style="display:none">
+          </label>
+        </div>
+        <div class="photo-grid" id="photoGrid"></div>
+        <div class="export-actions" id="exportActions" style="display:none;">
+          <button class="export-btn share" id="shareAllBtn">📤 分享全部</button>
+          <button class="export-btn save" id="saveAllBtn">💾 儲存到相簿</button>
+        </div>
+        <div class="export-actions" id="reportActions">
+          <button class="export-btn share" id="generateReportBtn" style="background:#ff9500;">📊 產出日巡報告</button>
+        </div>
+        <div id="reportStatus" style="margin-top:8px;text-align:center;font-size:.875rem;display:none;"></div>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="wizard-nav">
+      <button class="wizard-prev-btn" id="wizPrevBtn" onclick="prevPage()" style="display:none;">← 上一步</button>
+    </div>
+
   </div>
 
   <!-- Editor Overlay -->
@@ -629,6 +693,84 @@
       };
       img.src = url;
     }
+
+    // ---- Wizard Navigation ----
+    var _wizPage = 1, _wizGrpLabel = '';
+
+    function updateSummary() {
+      var sr = document.getElementById('sumRestaurant');
+      var sg = document.getElementById('sumGroup');
+      var sd = document.getElementById('sumDevice');
+      var sa = document.getElementById('sumAbnormal');
+      var sp = document.getElementById('sumPhotos');
+      if (sr) sr.textContent = _r ? _r.code + ' ' + _r.name : '—';
+      if (sg) sg.textContent = _wizGrpLabel || '—';
+      if (sd) sd.textContent = _dev || '—';
+      if (sa) sa.textContent = _abn || '—';
+      if (sp) sp.textContent = String(_ps.length);
+    }
+
+    function goToPage(n) {
+      _wizPage = n;
+      var pages = document.querySelectorAll('.wizard-page');
+      for (var i = 0; i < pages.length; i++) {
+        pages[i].classList.remove('active');
+      }
+      var p = document.getElementById('wiz-page-' + n);
+      if (p) p.classList.add('active');
+
+      // Progress dots
+      var dots = document.querySelectorAll('.wiz-dot');
+      for (var j = 0; j < dots.length; j++) {
+        var s = parseInt(dots[j].getAttribute('data-step'), 10);
+        dots[j].classList.remove('active', 'done');
+        if (s < n) dots[j].classList.add('done');
+        if (s === n) dots[j].classList.add('active');
+      }
+
+      // Prev button
+      var btn = document.getElementById('wizPrevBtn');
+      if (btn) btn.style.display = n > 1 ? 'inline-block' : 'none';
+
+      if (n === 3) updateSummary();
+    }
+
+    function prevPage() {
+      if (_wizPage > 1) goToPage(_wizPage - 1);
+    }
+
+    // Wrap functions with auto-advance (original logic preserved intact)
+    (function() {
+      var _origSelGrp = selGrp;
+      selGrp = function(key, label) {
+        _origSelGrp(key, label);
+        _wizGrpLabel = label;
+        goToPage(2);
+      };
+
+      var _origSelAbn = selAbn;
+      selAbn = function(label, dn) {
+        _origSelAbn(label, dn);
+        goToPage(3);
+        updateSummary();
+      };
+
+      var _origSelDev = selDev;
+      selDev = function(name) {
+        _origSelDev(name);
+        var it = AT[name];
+        if (!it || it.length === 0) {
+          goToPage(3);
+          updateSummary();
+        }
+      };
+
+      var _origKeep = keep;
+      keep = function() {
+        _origKeep();
+        updateSummary();
+      };
+    })();
 
     // ---- Bindings & Init ----
     function bindBtns() {
